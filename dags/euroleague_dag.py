@@ -2,10 +2,6 @@ import pendulum
 import requests
 from airflow.decorators import dag, task
 
-from airflow.decorators import dag, task
-import pendulum
-import requests
-
 
 @dag(
     start_date=pendulum.datetime(2021, 1, 1, tz="UTC"),
