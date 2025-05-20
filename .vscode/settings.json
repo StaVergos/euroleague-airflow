@@ -1,0 +1,9 @@
+{
+    "editor.fontSize": 15,
+    "editor.formatOnPaste": true,
+    "editor.formatOnSave": true,
+    "window.autoDetectColorScheme": false,
+    "window.closeWhenEmpty": false,
+    "editor.cursorBlinking": "smooth",
+    "editor.cursorStyle": "line"
+}
