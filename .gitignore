@@ -10,3 +10,7 @@ logs/*
 
 # Virtual environments
 .venv
+
+
+# VSCode settings folder
+.vscode/

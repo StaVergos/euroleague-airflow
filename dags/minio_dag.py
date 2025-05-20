@@ -10,6 +10,7 @@ ACCESS_KEY = "minioadmin"
 SECRET_KEY = "minioadmin"
 BUCKET_NAME = "euroleague"
 
+
 @dag(
     start_date=pendulum.datetime(2021, 1, 1, tz="UTC"),
     catchup=False,
