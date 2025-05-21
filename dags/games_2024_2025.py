@@ -2,6 +2,7 @@ import pendulum
 import requests
 from airflow.decorators import dag, task
 from core.mongodb.mongo_service import db, sanitize_id
+from pymongo.errors import BulkWriteError
 
 games_2023_collection = db.games_2023
 games_2023_collection.create_index("gameCode", unique=True)
@@ -33,12 +34,11 @@ def euroleague_games_2023_2024():
                 games_2023_documents = games_2023_collection.insert_many(
                     games_to_be_added, ordered=False
                 )
-            except Exception as e:
-                return {"message": f"No documents inserted. Exception: {str(e)}"}
-            sanitized_documents = [
-                sanitize_id(document) for document in games_2023_documents
-            ]
-            return sanitized_documents
+            except BulkWriteError as e:
+                return {
+                    "message": f"No documents inserted. Exception: {str(e.details)}"
+                }
+            return games_2023_documents.acknowledged
         else:
             all_games_2023_documents = list(games_2023_collection.find())
             first_document = all_games_2023_documents[0]
@@ -62,12 +62,11 @@ def euroleague_games_2023_2024():
                 games_2024_documents = games_2024_collection.insert_many(
                     games_to_be_added, ordered=False
                 )
-            except Exception as e:
-                return {"message": f"No documents inserted. Exception: {str(e)}"}
-            sanitized_documents = [
-                sanitize_id(document) for document in games_2024_documents
-            ]
-            return sanitized_documents
+            except BulkWriteError as e:
+                return {
+                    "message": f"No documents inserted. Exception: {str(e.details)}"
+                }
+            return games_2024_documents.acknowledged
         else:
             all_games_2024_documents = list(games_2024_collection.find())
             first_document = all_games_2024_documents[0]
