@@ -59,13 +59,13 @@ def euroleague_games_2024_2025():
                 games_to_be_added.append(game)
         if games_to_be_added:
             try:
-                games_2025_collection = games_2025_collection.instert_many(
-                    games_to_be_added, ordered=False
+                games_2025_documents = games_2025_collection.insert_many(
+                    games_to_be_added, ordered = False
                 )
             except Exception as e:
                 return {"message": f"No documents inserted. Exception: {str(e)}"}
             sanitized_documents = [
-                sanitize_id(document) for document in all_games_2025_documents
+                sanitize_id(document) for document in games_2025_documents
             ]
             return sanitized_documents
         else:
