@@ -1,11 +1,8 @@
 import pendulum
 import requests
 from airflow.decorators import dag, task
-import datetime
-from pymongo import MongoClient
+from core.mongodb.mongo_service import db, sanitize_id
 
-client = MongoClient("mongodb://mongodb:27017/")
-db = client["euroleague"]
 games_2024_collection = db.games_2024
 games_2025_collection = db.games_2025
 
@@ -26,17 +23,17 @@ def euroleague_games_2024_2025():
         for game in result_data:
             game_code = game.get("gameCode")
             query = {"gameCode": game_code}
-            existing_game = games_2024_collection.find(query)
+            existing_game = games_2024_collection.find_one(query)
             if not existing_game:
                 games_to_be_added.append(game)
-            if games_to_be_added:
-                games_2024_documents = games_2024_collection.insert_many(games_to_be_added)
-                return games_2024_documents
-            else:
-                all_games_2024_documents = games_2024_collection.find()
-                first_document = all_games_2024_documents[0]
-                first_document["_id"] = str(first_document["_id"])
-                return first_document
+        if games_to_be_added:
+            games_2024_documents = games_2024_collection.insert_many(games_to_be_added)
+            sanitized_documents = [sanitize_id(document) for document in games_2024_documents]
+            return sanitized_documents
+        else:
+            all_games_2024_documents = list(games_2024_collection.find())
+            first_document = all_games_2024_documents[0]
+            return sanitize_id(first_document)
 
     @task()
     def get_games_2025():
