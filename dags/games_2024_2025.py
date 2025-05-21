@@ -4,6 +4,7 @@ from airflow.decorators import dag, task
 from core.mongodb.mongo_service import db, sanitize_id
 
 games_2024_collection = db.games_2024
+games_2024_collection.create_index("gameCode", unique=True)
 games_2025_collection = db.games_2025
 
 
@@ -27,8 +28,15 @@ def euroleague_games_2024_2025():
             if not existing_game:
                 games_to_be_added.append(game)
         if games_to_be_added:
-            games_2024_documents = games_2024_collection.insert_many(games_to_be_added)
-            sanitized_documents = [sanitize_id(document) for document in games_2024_documents]
+            try:
+                games_2024_documents = games_2024_collection.insert_many(
+                    games_to_be_added, ordered=False
+                )
+            except Exception as e:
+                return {"message": f"No documents inserted. Exception: {str(e)}"}
+            sanitized_documents = [
+                sanitize_id(document) for document in games_2024_documents
+            ]
             return sanitized_documents
         else:
             all_games_2024_documents = list(games_2024_collection.find())
