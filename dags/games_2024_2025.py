@@ -60,7 +60,7 @@ def euroleague_games_2024_2025():
         if games_to_be_added:
             try:
                 games_2025_documents = games_2025_collection.insert_many(
-                    games_to_be_added, ordered = False
+                    games_to_be_added, ordered=False
                 )
             except Exception as e:
                 return {"message": f"No documents inserted. Exception: {str(e)}"}
