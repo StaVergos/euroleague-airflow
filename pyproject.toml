@@ -7,5 +7,6 @@ requires-python = ">=3.12"
 dependencies = [
     "apache-airflow>=3.0.1",
     "boto3>=1.38.17",
+    "pymongo>=4.13.0",
     "ruff>=0.11.10",
 ]
