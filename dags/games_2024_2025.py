@@ -1,13 +1,18 @@
 import pendulum
 import requests
 from airflow.decorators import dag, task
-from core.mongodb.mongo_service import db, sanitize_id
+from core.mongodb.mongo_service import db, sanitize_id, parse_dict
 from pymongo.errors import BulkWriteError
 
 games_2023_collection = db.games_2023
 games_2023_collection.create_index("gameCode", unique=True)
 games_2024_collection = db.games_2024
 games_2024_collection.create_index("gameCode", unique=True)
+
+players_2023_collection = db.players_2023
+players_2023_collection.create_index("person.code", unique=True)
+players_2024_collection = db.players_2024
+players_2024_collection.create_index("person.code", unique=True)
 
 
 @dag(
@@ -72,8 +77,74 @@ def euroleague_games_2023_2024():
             first_document = all_games_2024_documents[0]
             return sanitize_id(first_document)
 
-    games_2024 = get_games_2023()
-    games_2025 = get_games_2024()
+    @task()
+    def get_players_2023():
+        result_raw = requests.get(
+            "https://api-live.euroleague.net/v2/competitions/E/seasons/E2023/people"
+        )
+        result_data = result_raw.json().get("data")
+        flatten_list = []
+        for dictionary in result_data:
+            flat_dictionary = parse_dict(dictionary)
+            flatten_list.append(flat_dictionary)
+        players_to_be_added = []
+        for player in flatten_list:
+            player_code = player.get("person.code")
+            query = {"person.code": player_code}
+            existing_player = players_2023_collection.find_one(query)
+            if not existing_player:
+                players_to_be_added.append(player)
+        if players_to_be_added:
+            try:
+                players_2023_documents = players_2023_collection.insert_many(
+                    players_to_be_added, ordered=False
+                )
+            except BulkWriteError as e:
+                return {
+                    "message": f"No documents inserted. Exception: {str(e.details)}"
+                }
+            return players_2023_documents.acknowledged
+        else:
+            all_players_2023_documents = list(players_2023_collection.find())
+            first_document = all_players_2023_documents[0]
+            return sanitize_id(first_document)
+
+    @task()
+    def get_players_2024():
+        result_raw = requests.get(
+            "https://api-live.euroleague.net/v2/competitions/E/seasons/E2024/people"
+        )
+        result_data = result_raw.json().get("data")
+        flatten_list = []
+        for dictionary in result_data:
+            flat_dictionary = parse_dict(dictionary)
+            flatten_list.append(flat_dictionary)
+        players_to_be_added = []
+        for player in flatten_list:
+            player_code = player.get("person.code")
+            query = {"person.code": player_code}
+            existing_player = players_2024_collection.find_one(query)
+            if not existing_player:
+                players_to_be_added.append(player)
+        if players_to_be_added:
+            try:
+                players_2024_documents = players_2024_collection.insert_many(
+                    players_to_be_added, ordered=False
+                )
+            except BulkWriteError as e:
+                return {
+                    "message": f"No documents inserted. Exception: {str(e.details)}"
+                }
+            return players_2024_documents.acknowledged
+        else:
+            all_players_2024_documents = list(players_2024_collection.find())
+            first_document = all_players_2024_documents[0]
+            return sanitize_id(first_document)
+
+    games_2023 = get_games_2023()
+    games_2024 = get_games_2024()
+    players_2023 = get_players_2023()
+    players_2024 = get_players_2024()
 
 
 euroleague_dag = euroleague_games_2023_2024()
