@@ -27,17 +27,10 @@ def euroleague_games_2023_2024():
             "https://api-live.euroleague.net/v2/competitions/E/seasons/E2023/games"
         )
         result_data = result_raw.json().get("data")
-        games_to_be_added = []
-        for game in result_data:
-            game_code = game.get("gameCode")
-            query = {"gameCode": game_code}
-            existing_game = games_2023_collection.find_one(query)
-            if not existing_game:
-                games_to_be_added.append(game)
-        if games_to_be_added:
+        if result_data:
             try:
                 games_2023_documents = games_2023_collection.insert_many(
-                    games_to_be_added, ordered=False
+                    result_data, ordered=False
                 )
             except BulkWriteError as e:
                 return {
@@ -55,17 +48,10 @@ def euroleague_games_2023_2024():
             "https://api-live.euroleague.net/v2/competitions/E/seasons/E2024/games"
         )
         result_data = result_raw.json().get("data")
-        games_to_be_added = []
-        for game in result_data:
-            game_code = game.get("gameCode")
-            query = {"gameCode": game_code}
-            existing_game = games_2024_collection.find_one(query)
-            if not existing_game:
-                games_to_be_added.append(game)
-        if games_to_be_added:
+        if result_data:
             try:
                 games_2024_documents = games_2024_collection.insert_many(
-                    games_to_be_added, ordered=False
+                    result_data, ordered=False
                 )
             except BulkWriteError as e:
                 return {
@@ -142,17 +128,10 @@ def euroleague_games_2023_2024():
                 "season_startDate": player["season"]["startDate"],
             }
             flat_data.append(player)
-        players_to_be_added = []
-        for player in flat_data:
-            player_code = player.get("person_code")
-            query = {"person_code": player_code}
-            existing_player = players_2023_collection.find_one(query)
-            if not existing_player:
-                players_to_be_added.append(player)
-        if players_to_be_added:
+        if flat_data:
             try:
                 players_2023_documents = players_2023_collection.insert_many(
-                    players_to_be_added
+                    flat_data, ordered=False 
                 )
             except BulkWriteError as e:
                 return {
@@ -229,17 +208,10 @@ def euroleague_games_2023_2024():
                 "season_startDate": player["season"]["startDate"],
             }
             flat_data.append(player)
-        players_to_be_added = []
-        for player in flat_data:
-            player_code = player.get("person_code")
-            query = {"person_code": player_code}
-            existing_player = players_2024_collection.find_one(query)
-            if not existing_player:
-                players_to_be_added.append(player)
-        if players_to_be_added:
+        if flat_data:
             try:
                 players_2024_documents = players_2024_collection.insert_many(
-                    players_to_be_added
+                    flat_data, ordered=False 
                 )
             except BulkWriteError as e:
                 return {
