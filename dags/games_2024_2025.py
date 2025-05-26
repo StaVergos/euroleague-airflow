@@ -131,7 +131,7 @@ def euroleague_games_2023_2024():
         if flat_data:
             try:
                 players_2023_documents = players_2023_collection.insert_many(
-                    flat_data, ordered=False 
+                    flat_data, ordered=False
                 )
             except BulkWriteError as e:
                 return {
@@ -211,7 +211,7 @@ def euroleague_games_2023_2024():
         if flat_data:
             try:
                 players_2024_documents = players_2024_collection.insert_many(
-                    flat_data, ordered=False 
+                    flat_data, ordered=False
                 )
             except BulkWriteError as e:
                 return {
