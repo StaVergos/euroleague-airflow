@@ -223,10 +223,10 @@ def euroleague_games_2023_2024():
             first_document = all_players_2024_documents[0]
             return sanitize_id(first_document)
 
-    games_2023 = get_games_2023()
-    games_2024 = get_games_2024()
-    players_2023 = get_players_2023()
-    players_2024 = get_players_2024()
+    games_2023 = get_games_2023()  # noqa: F841
+    games_2024 = get_games_2024()  # noqa: F841
+    players_2023 = get_players_2023()  # noqa: F841
+    players_2024 = get_players_2024()  # noqa: F841
 
 
 euroleague_dag = euroleague_games_2023_2024()
