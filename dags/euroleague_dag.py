@@ -25,8 +25,8 @@ def euroleague_api_call():
         print(result_data)
         return result_data
 
-    all_clubs = get_clubs()
-    all_players = get_players()
+    all_clubs = get_clubs()  # noqa: F841
+    all_players = get_players()  # noqa: F841
 
 
 euroleague_dag = euroleague_api_call()
