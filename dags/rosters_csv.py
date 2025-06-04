@@ -1,17 +1,17 @@
-from pymongo import MongoClient
 import pandas as pd
-import boto3
-from botocore.client import Config
 from botocore.exceptions import ClientError
 import logging
 import pendulum
 from airflow.decorators import dag, task
+from core.minio.minio_service import s3_client, BUCKET_NAME
+from core.mongodb.mongo_service import db, sanitize_id
+from pymongo.errors import BulkWriteError
 
 
-MINIO_ENDPOINT = "http://minio:9000"
-ACCESS_KEY = "minioadmin"
-SECRET_KEY = "minioadmin"
-BUCKET_NAME = "euroleague"
+roster_2023_collection = db.players_2023_roster
+roster_2023_collection.create_index("person_code", unique=True)
+roster_2024_collection = db.players_2024_roster
+roster_2024_collection.create_index("person_code", unique=True)
 
 
 @dag(
@@ -22,23 +22,13 @@ BUCKET_NAME = "euroleague"
 def season_rosters_2023_2024():
     @task
     def upload_players():
-        s3 = boto3.client(
-            "s3",
-            endpoint_url=MINIO_ENDPOINT,
-            aws_access_key_id=ACCESS_KEY,
-            aws_secret_access_key=SECRET_KEY,
-            config=Config(signature_version="s3v4"),
-            region_name="us-east-1",
-        )
+        s3 = s3_client()
         try:
             s3.head_bucket(Bucket=BUCKET_NAME)
             print(f"Bucket '{BUCKET_NAME}' already exists.")
         except Exception:
             s3.create_bucket(Bucket=BUCKET_NAME)
             print(f"Bucket '{BUCKET_NAME}' created.")
-
-        client = MongoClient("mongodb://mongodb:27017/")
-        db = client["euroleague"]
 
         players_2023_collection = db.players_2023
         players_2024_collection = db.players_2024
@@ -48,22 +38,22 @@ def season_rosters_2023_2024():
         players_2023 = []
         for player in all_players_2023:
             if (
-                not player.get("person_isReferee")
-                and player.get("typeName") == "Player"
+                not player.get("person_is_referee")
+                and player.get("type_name") == "Player"
             ):
                 player = {
                     "person_code": player.get("person_code"),
                     "person_name": player.get("person_name"),
                     "person_height": player.get("person_height"),
                     "person_weight": player.get("person_weight"),
-                    "person_birthDate": player.get("person_birthDate"),
+                    "person_birth_date": player.get("person_birthDate"),
                     "position": player.get("position"),
-                    "positionName": player.get("positionName"),
+                    "position_name": player.get("positionName"),
                     "club_code": player.get("club_code"),
                     "club_name": player.get("club_name"),
-                    "club_abbreviatedName": player.get("club_abbreviatedName"),
-                    "club_editorialName": player.get("club_editorialName"),
-                    "club_tvCode": player.get("club_tvCode"),
+                    "club_abbreviated_name": player.get("club_abbreviatedName"),
+                    "club_editorial_name": player.get("club_editorialName"),
+                    "club_tv_code": player.get("club_tvCode"),
                     "season_name": player.get("season_name"),
                 }
                 players_2023.append(player)
@@ -71,25 +61,49 @@ def season_rosters_2023_2024():
         players_2024 = []
         for player in all_players_2024:
             if (
-                not player.get("person_isReferee")
-                and player.get("typeName") == "Player"
+                not player.get("person_is_referee")
+                and player.get("type_name") == "Player"
             ):
                 player = {
                     "person_code": player.get("person_code"),
                     "person_name": player.get("person_name"),
                     "person_height": player.get("person_height"),
                     "person_weight": player.get("person_weight"),
-                    "person_birthDate": player.get("person_birthDate"),
+                    "person_birth_date": player.get("person_birthDate"),
                     "position": player.get("position"),
-                    "positionName": player.get("positionName"),
+                    "position_name": player.get("positionName"),
                     "club_code": player.get("club_code"),
                     "club_name": player.get("club_name"),
-                    "club_abbreviatedName": player.get("club_abbreviatedName"),
-                    "club_editorialName": player.get("club_editorialName"),
-                    "club_tvCode": player.get("club_tvCode"),
+                    "club_abbreviated_name": player.get("club_abbreviatedName"),
+                    "club_editorial_name": player.get("club_editorialName"),
+                    "club_tv_code": player.get("club_tvCode"),
                     "season_name": player.get("season_name"),
                 }
                 players_2024.append(player)
+
+        if players_2023:
+            try:
+                roster_2023_collection.insert_many(players_2023, ordered=False)
+            except BulkWriteError as e:
+                return {
+                    "message": f"No documents inserted. Exception: {str(e.details)}"
+                }
+        else:
+            all_players_2023_documents = list(roster_2023_collection.find())
+            first_document = all_players_2023_documents[0]
+            return sanitize_id(first_document)
+
+        if players_2024:
+            try:
+                roster_2024_collection.insert_many(players_2024, ordered=False)
+            except BulkWriteError as e:
+                return {
+                    "message": f"No documents inserted. Exception: {str(e.details)}"
+                }
+        else:
+            all_players_2024_documents = list(roster_2024_collection.find())
+            first_document = all_players_2024_documents[0]
+            return sanitize_id(first_document)
 
         players_23_df = pd.DataFrame.from_records(players_2023)
         players_23_df.to_csv("players_23.csv")
