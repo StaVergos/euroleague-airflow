@@ -1,18 +1,15 @@
 import pendulum
 import requests
 from airflow.decorators import dag, task
-from core.mongodb.mongo_service import db, sanitize_id
+from core.mongodb.mongo_service import (
+    sanitize_id,
+    games_2023_collection,
+    games_2024_collection,
+    players_2023_collection,
+    players_2024_collection,
+)
 from pymongo.errors import BulkWriteError
-
-games_2023_collection = db.games_2023
-games_2023_collection.create_index("gameCode", unique=True)
-games_2024_collection = db.games_2024
-games_2024_collection.create_index("gameCode", unique=True)
-
-players_2023_collection = db.players_2023
-players_2023_collection.create_index("person_code", unique=True)
-players_2024_collection = db.players_2024
-players_2024_collection.create_index("person_code", unique=True)
+from airflow.operators.trigger_dagrun import TriggerDagRunOperator  # type: ignore
 
 
 @dag(
@@ -223,10 +220,18 @@ def euroleague_games_2023_2024():
             first_document = all_players_2024_documents[0]
             return sanitize_id(first_document)
 
-    games_2023 = get_games_2023()  # noqa: F841
-    games_2024 = get_games_2024()  # noqa: F841
-    players_2023 = get_players_2023()  # noqa: F841
-    players_2024 = get_players_2024()  # noqa: F841
+    trigger_rosters_dag = TriggerDagRunOperator(
+        task_id="trigger_rosters_dag",
+        trigger_dag_id="season_rosters_2023_2024",
+    )
+
+    (
+        get_games_2023()
+        >> get_games_2024()
+        >> get_players_2023()
+        >> get_players_2024()
+        >> trigger_rosters_dag
+    )
 
 
 euroleague_dag = euroleague_games_2023_2024()
