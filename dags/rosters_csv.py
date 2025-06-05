@@ -4,17 +4,18 @@ import logging
 import pendulum
 from airflow.decorators import dag, task
 from core.minio.minio_service import s3_client, BUCKET_NAME
-from core.mongodb.mongo_service import db, sanitize_id
+from core.mongodb.mongo_service import (
+    sanitize_id,
+    players_2023_collection,
+    players_2024_collection,
+    roster_2023_collection,
+    roster_2024_collection,
+)
 from pymongo.errors import BulkWriteError
 
 
-roster_2023_collection = db.players_2023_roster
-roster_2023_collection.create_index("person_code", unique=True)
-roster_2024_collection = db.players_2024_roster
-roster_2024_collection.create_index("person_code", unique=True)
-
-
 @dag(
+    dag_id="season_rosters_2023_2024",
     start_date=pendulum.datetime(2021, 1, 1, tz="UTC"),
     catchup=False,
     tags=["example"],
@@ -30,8 +31,6 @@ def season_rosters_2023_2024():
             s3.create_bucket(Bucket=BUCKET_NAME)
             print(f"Bucket '{BUCKET_NAME}' created.")
 
-        players_2023_collection = db.players_2023
-        players_2024_collection = db.players_2024
         all_players_2023 = list(players_2023_collection.find())
         all_players_2024 = list(players_2024_collection.find())
 
