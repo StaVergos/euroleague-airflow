@@ -122,7 +122,7 @@ def season_rosters_2023_2024():
         except ClientError as e:
             logging.error(e)
 
-    task_apload = upload_players()  # noqa: F841
+    task_upload = upload_players()  # noqa: F841
 
 
 players_rosters = season_rosters_2023_2024()
